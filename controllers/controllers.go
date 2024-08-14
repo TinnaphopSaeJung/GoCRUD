@@ -197,7 +197,7 @@ func UpdateOrder(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
-	// ตรวจสอบว่า Order นี้มีอยู่ในระบบหรือไม่
+	// ตรวจสอบว่า Order ที่ต้องการ update นี้มีอยู่ในระบบหรือไม่
 	var order m.Order
 	if err := db.Preload("Items").Where("id = ?", id).First(&order).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Order not found.")
@@ -209,10 +209,15 @@ func UpdateOrder(c *fiber.Ctx) error {
 		originalItems[item.Product] = item
 	}
 
+	// ลบรายการสินค้าเก่าทั้งหมดในคำสั่งซื้อนั้น
+	if err := db.Where("order_id = ?", id).Delete(&m.Item{}).Error; err != nil {
+		return c.Status(500).SendString("Failed to delete old items.")
+	}
+
 	var total_price int
 	var updatedItems []m.Item
 
-	// อัปเดตข้อมูลสินค้าในออร์เดอร์
+	// อัปเดตข้อมูล product จาก order ใหม่ที่ update มา
 	for _, item := range orderRequest.Items {
 		var product m.Product
 		if err := db.Where("Product_Name = ?", item.Product).First(&product).Error; err != nil {
@@ -455,5 +460,31 @@ func RemoveProduct(c *fiber.Ctx) error {
 
 	return c.Status(201).JSON(fiber.Map{
 		"message": productName + " has been successfully deleted.",
+	})
+}
+
+func RemoveOrder(c *fiber.Ctx) error {
+	db := database.DBConn
+	id := c.Params("id")
+	var order m.Order
+
+	// ตรวจสอบว่า Order ที่ต้องการลบมีอยู่ในฐานข้อมูลหรือไม่
+	if err := db.Preload("Items").Where("id = ?", id).First(&order).Error; err != nil {
+		return c.Status(404).SendString("Order not found.")
+	}
+
+	// ลบรายการสินค้าในคำสั่งซื้อนั้น
+	if err := db.Where("order_id = ?", id).Delete(&m.Item{}).Error; err != nil {
+		return c.Status(500).SendString("Failed to delete order items.")
+	}
+
+	// ลบคำสั่งซื้อ
+	result := db.Delete(&order, id)
+	if result.RowsAffected == 0 {
+		return c.SendStatus(404)
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": "Order has been successfully deleted.",
 	})
 }

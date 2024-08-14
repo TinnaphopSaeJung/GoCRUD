@@ -19,6 +19,7 @@ func Routes(app *fiber.App) {
 	order.Get("/:id", c.GetOrder)
 	order.Post("/:id", c.AddOrder)
 	order.Put("/:id", c.UpdateOrder)
+	order.Delete("/:id", c.RemoveOrder)
 
 	user := app.Group("/user")
 	user.Post("/register", c.Register)
