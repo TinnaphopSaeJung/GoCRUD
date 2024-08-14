@@ -203,7 +203,7 @@ func UpdateOrder(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Order not found.")
 	}
 
-	// สร้าง mapping สำหรับสินค้าต้นฉบับใน order
+	// สร้าง mapping สำหรับเก็บรายการ order ก่อนที่จะถูก update
 	originalItems := make(map[string]m.Item)
 	for _, item := range order.Items {
 		originalItems[item.Product] = item
