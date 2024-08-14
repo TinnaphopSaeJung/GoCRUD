@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -217,7 +216,7 @@ func UpdateOrder(c *fiber.Ctx) error {
 	for _, item := range orderRequest.Items {
 		var product m.Product
 		if err := db.Where("Product_Name = ?", item.Product).First(&product).Error; err != nil {
-			return c.Status(fiber.StatusNotFound).SendString("Product " + itemRequest.Product + " not found.")
+			return c.Status(404).SendString("Product " + item.Product + " not found.")
 		}
 
 		// ตรวจสอบจำนวนสินค้า
@@ -228,12 +227,23 @@ func UpdateOrder(c *fiber.Ctx) error {
 			)
 		}
 
+		// Update จำนวนสินค้าใน Product
+		product.Amount = product.Amount + originalAmount - item.Amount
+		if err := db.Save(&product).Error; err != nil {
+			return c.Status(500).SendString("Failed to update product quantity.")
+		}
+
+		// คำนวณราคาใหม่
+		total_price += product.Price * item.Amount
+		updatedItems = append(updatedItems, m.Item{
+			Product: item.Product,
+			Amount:  item.Amount,
+		})
 	}
 
-	// อัปเดต Order ด้วยข้อมูลใหม่
+	// อัปเดตรายการสินค้าใน order
 	order.Items = updatedItems
 	order.Total_Price = total_price
-	order.UpdatedAt = time.Now()
 
 	if err := db.Save(&order).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to update order.")
