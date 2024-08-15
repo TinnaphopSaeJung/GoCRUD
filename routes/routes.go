@@ -13,6 +13,7 @@ func Routes(app *fiber.App) {
 	product.Post("/", c.AddProduct)
 	product.Put("/:id", c.UpdateProduct)
 	product.Delete("/:id", c.RemoveProduct)
+	product.Delete("/:product_id/image/:image_id", c.RemoveImage)
 
 	order := app.Group("/order")
 	order.Get("/", c.GetOrders)
