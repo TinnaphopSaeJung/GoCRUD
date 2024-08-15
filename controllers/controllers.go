@@ -410,25 +410,12 @@ func UpdateProduct(c *fiber.Ctx) error {
 		product.Amount = amount
 	}
 
-	// จัดการการ upload รูปภาพใหม่ (ถ้ามี)
+	// Upload Images
 	form, err := c.MultipartForm()
 	// ตรวจสอบว่ามีไฟล์ใหม่ถูก upload มาไหม
 	if err == nil && form != nil {
 		// ตรวจสอบว่ามีไฟล์ใหม่ถูก upload มาไหม
 		if len(form.File["Images"]) > 0 {
-			// ลบรูปภาพเก่าทั้งหมดก่อน (ถ้ามี)
-			for _, img := range product.Images {
-				oldImagePath := "." + img.ImageURL
-				if err := os.Remove(oldImagePath); err != nil {
-					return c.Status(500).SendString("Failed to remove old image.")
-				}
-			}
-
-			// ลบข้อมูลรูปภาพจากฐานข้อมูล
-			if err := db.Where("product_id = ?", product.ID).Delete(&m.ProductImage{}).Error; err != nil {
-				return c.Status(500).SendString("Failed to remove image data.")
-			}
-
 			// บันทึกรูปภาพใหม่
 			files := form.File["Images"]
 			for _, file := range files {
@@ -447,6 +434,8 @@ func UpdateProduct(c *fiber.Ctx) error {
 				if err := db.Create(&productImage).Error; err != nil {
 					return c.Status(500).SendString("Failed to save product image.")
 				}
+
+				product.Images = append(product.Images, productImage)
 			}
 		}
 	}
