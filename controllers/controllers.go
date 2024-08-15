@@ -229,6 +229,8 @@ func UpdateOrder(c *fiber.Ctx) error {
 			}
 			log.Printf("Item not included in update: Product: %s, Amount: %d, Price: %d", item.Product, item.Amount, product.Price)
 			total_price_nonupdate += product.Price * item.Amount
+
+			updatedItems = append(updatedItems, item)
 		}
 	}
 
