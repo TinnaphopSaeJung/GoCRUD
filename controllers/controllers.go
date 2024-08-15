@@ -209,11 +209,6 @@ func UpdateOrder(c *fiber.Ctx) error {
 		originalItems[item.Product] = item
 	}
 
-	// ลบรายการสินค้าเก่าทั้งหมดในคำสั่งซื้อนั้น
-	if err := db.Where("order_id = ?", id).Delete(&m.Item{}).Error; err != nil {
-		return c.Status(500).SendString("Failed to delete old items.")
-	}
-
 	var total_price int
 	var updatedItems []m.Item
 
@@ -240,10 +235,26 @@ func UpdateOrder(c *fiber.Ctx) error {
 
 		// คำนวณราคาใหม่
 		total_price += product.Price * item.Amount
-		updatedItems = append(updatedItems, m.Item{
-			Product: item.Product,
-			Amount:  item.Amount,
-		})
+
+		if originalItems, exists := originalItems[item.Product]; exists {
+			// ถ้า item นี้มีอยู่แล้วใน order, ให้ update จำนวนสินค้า
+			originalItems.Amount = item.Amount
+			if err := db.Save(&originalItems).Error; err != nil {
+				return c.Status(500).SendString("Failed to update item.")
+			}
+			updatedItems = append(updatedItems, originalItems)
+		} else {
+			// ถ้า item นี้ยังไม่มีอยู่ใน order, ให้สร้างใหม่
+			newItem := m.Item{
+				Product: item.Product,
+				Amount:  item.Amount,
+				OrderID: order.ID,
+			}
+			if err := db.Create(&newItem).Error; err != nil {
+				return c.Status(500).SendString("Failed to add new item.")
+			}
+			updatedItems = append(updatedItems, newItem)
+		}
 	}
 
 	// อัปเดตรายการสินค้าใน order
