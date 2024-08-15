@@ -385,7 +385,10 @@ func UpdateProduct(c *fiber.Ctx) error {
 
 	// Update field ต่าง ๆ
 	// Update Product_Name
-	product.Product_Name = c.FormValue("Product Name")
+	nameCheck := c.FormValue("Product_Name")
+	if nameCheck != "" {
+		product.Product_Name = c.FormValue("Product_Name")
+	}
 
 	// Update Price
 	priceCheck := c.FormValue("Price")
@@ -411,36 +414,39 @@ func UpdateProduct(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 	// ตรวจสอบว่ามีไฟล์ใหม่ถูก upload มาไหม
 	if err == nil && form != nil {
-		// ลบรูปภาพเก่าทั้งหมดก่อน (ถ้ามี)
-		for _, img := range product.Images {
-			oldImagePath := "." + img.ImageURL
-			if err := os.Remove(oldImagePath); err != nil {
-				return c.Status(500).SendString("Failed to remove old image.")
-			}
-		}
-
-		// ลบข้อมูลรูปภาพจากฐานข้อมูล
-		if err := db.Where("product_id = ?", product.ID).Delete(&m.ProductImage{}).Error; err != nil {
-			return c.Status(500).SendString("Failed to remove image data.")
-		}
-
-		// บันทึกรูปภาพใหม่
-		files := form.File["Images"]
-		for _, file := range files {
-			filename := uuid.New().String() + filepath.Ext(file.Filename)
-			if err := c.SaveFile(file, filepath.Join("uploads", filename)); err != nil {
-				return c.Status(500).SendString("Failed to upload new image.")
+		// ตรวจสอบว่ามีไฟล์ใหม่ถูก upload มาไหม
+		if len(form.File["Images"]) > 0 {
+			// ลบรูปภาพเก่าทั้งหมดก่อน (ถ้ามี)
+			for _, img := range product.Images {
+				oldImagePath := "." + img.ImageURL
+				if err := os.Remove(oldImagePath); err != nil {
+					return c.Status(500).SendString("Failed to remove old image.")
+				}
 			}
 
-			// บันทึกเส้นทางไฟล์ใหม่ในฐานข้อมูล
-			productImage := m.ProductImage{
-				ProductID: product.ID,
-				ImageURL:  "/uploads/" + filename,
+			// ลบข้อมูลรูปภาพจากฐานข้อมูล
+			if err := db.Where("product_id = ?", product.ID).Delete(&m.ProductImage{}).Error; err != nil {
+				return c.Status(500).SendString("Failed to remove image data.")
 			}
 
-			// บันทึก ProductImage ลงในฐานข้อมูล
-			if err := db.Create(&productImage).Error; err != nil {
-				return c.Status(500).SendString("Failed to save product image.")
+			// บันทึกรูปภาพใหม่
+			files := form.File["Images"]
+			for _, file := range files {
+				filename := uuid.New().String() + filepath.Ext(file.Filename)
+				if err := c.SaveFile(file, filepath.Join("uploads", filename)); err != nil {
+					return c.Status(500).SendString("Failed to upload new image.")
+				}
+
+				// บันทึกเส้นทางไฟล์ใหม่ในฐานข้อมูล
+				productImage := m.ProductImage{
+					ProductID: product.ID,
+					ImageURL:  "/uploads/" + filename,
+				}
+
+				// บันทึก ProductImage ลงในฐานข้อมูล
+				if err := db.Create(&productImage).Error; err != nil {
+					return c.Status(500).SendString("Failed to save product image.")
+				}
 			}
 		}
 	}
