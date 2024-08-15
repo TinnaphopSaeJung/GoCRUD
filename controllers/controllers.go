@@ -3,6 +3,7 @@ package controllers
 import (
 	"go-fiber-test/database"
 	m "go-fiber-test/models"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -203,14 +204,33 @@ func UpdateOrder(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Order not found.")
 	}
 
+	var total_price int
+	var total_price_nonupdate int
+	var updatedItems []m.Item
+
 	// สร้าง mapping สำหรับเก็บรายการ order ก่อนที่จะถูก update
 	originalItems := make(map[string]m.Item)
 	for _, item := range order.Items {
 		originalItems[item.Product] = item
 	}
 
-	var total_price int
-	var updatedItems []m.Item
+	// สร้าง set โดยให้ product ที่อยู่ใน request เป็น true ทั้งหมด
+	updatedProducts := make(map[string]bool)
+	for _, item := range orderRequest.Items {
+		updatedProducts[item.Product] = true
+	}
+
+	for productName, item := range originalItems {
+		// ตรวจสอบสินค้าที่ไม่ได้อยู่ใน request ==> updatedProducts[productName] == false
+		if !updatedProducts[productName] {
+			var product m.Product
+			if err := db.Where("Product_Name = ?", productName).First(&product).Error; err != nil {
+				return c.Status(500).SendString("Failed to retrieve product " + productName + " from the database.")
+			}
+			log.Printf("Item not included in update: Product: %s, Amount: %d, Price: %d", item.Product, item.Amount, product.Price)
+			total_price_nonupdate += product.Price * item.Amount
+		}
+	}
 
 	// อัปเดตข้อมูล product จาก order ใหม่ที่ update มา
 	for _, item := range orderRequest.Items {
@@ -259,7 +279,7 @@ func UpdateOrder(c *fiber.Ctx) error {
 
 	// อัปเดตรายการสินค้าใน order
 	order.Items = updatedItems
-	order.Total_Price = total_price
+	order.Total_Price = total_price + total_price_nonupdate
 
 	if err := db.Save(&order).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to update order.")
