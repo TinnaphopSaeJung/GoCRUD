@@ -25,4 +25,5 @@ func Routes(app *fiber.App) {
 	user := app.Group("/user")
 	user.Post("/register", c.Register)
 	user.Post("/login", c.Login)
+	user.Post("/refresh-token", c.RefreshToken)
 }
