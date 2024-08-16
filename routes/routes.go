@@ -2,6 +2,7 @@ package routes
 
 import (
 	c "go-fiber-test/controllers"
+	md "go-fiber-test/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -9,18 +10,18 @@ import (
 func Routes(app *fiber.App) {
 	product := app.Group("/product")
 	product.Get("/", c.GetProducts)
-	product.Get("/:id", c.GetProduct)
-	product.Post("/", c.AddProduct)
-	product.Put("/:id", c.UpdateProduct)
-	product.Delete("/:id", c.RemoveProduct)
-	product.Delete("/:product_id/image/:image_id", c.RemoveImage)
+	product.Get("/:id", md.AuthRequired, c.GetProduct)
+	product.Post("/", md.AuthRequired, c.AddProduct)
+	product.Put("/:id", md.AuthRequired, c.UpdateProduct)
+	product.Delete("/:id", md.AuthRequired, c.RemoveProduct)
+	product.Delete("/:product_id/image/:image_id", md.AuthRequired, c.RemoveImage)
 
 	order := app.Group("/order")
-	order.Get("/", c.GetOrders)
-	order.Get("/:id", c.GetOrder)
-	order.Post("/:id", c.AddOrder)
-	order.Put("/:id", c.UpdateOrder)
-	order.Delete("/:id", c.RemoveOrder)
+	order.Get("/", md.AuthRequired, c.GetOrders)
+	order.Get("/:id", md.AuthRequired, c.GetOrder)
+	order.Post("/:id", md.AuthRequired, c.AddOrder)
+	order.Put("/:id", md.AuthRequired, c.UpdateOrder)
+	order.Delete("/:id", md.AuthRequired, c.RemoveOrder)
 
 	user := app.Group("/user")
 	user.Post("/register", c.Register)
