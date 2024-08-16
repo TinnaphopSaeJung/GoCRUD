@@ -90,7 +90,6 @@ func Login(c *fiber.Ctx) error {
 	})
 }
 
-// test
 func RefreshToken(c *fiber.Ctx) error {
 	refreshToken := c.FormValue("refreshToken")
 
