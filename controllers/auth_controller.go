@@ -134,3 +134,41 @@ func RefreshToken(c *fiber.Ctx) error {
 		"accessToken": newAccessToken,
 	})
 }
+
+func Approve(c *fiber.Ctx) error {
+	db := database.DBConn
+	var user m.User
+
+	// รับค่า ID ของ user ที่ต้องการจะ approve
+	inputID := c.FormValue("UserID")
+
+	// ตรวจสอบ user ว่ามีอยู่ไหมจาก inputID
+	if err := db.Where("id = ?", inputID).First(&user).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("User not found.")
+	}
+
+	// ตรวจสอบก่อนว่า user คนนี้ได้รับการ approve หรือยัง ถ้ายังก็ approve ให้กับ user คนนั้น
+	if !user.Approve {
+		user.Approve = true
+
+		if err := db.Save(&user).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to approve user.")
+		}
+	} else {
+		return c.Status(fiber.StatusBadRequest).SendString("This user has already been approved.")
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": user.FirstName + " has been approved.",
+	})
+}
+
+func GetUsers(c *fiber.Ctx) error {
+	db := database.DBConn
+	var users []m.User
+
+	db.Find(&users)
+	return c.Status(200).JSON(fiber.Map{
+		"data": &users,
+	})
+}
