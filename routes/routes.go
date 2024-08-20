@@ -31,6 +31,7 @@ func Routes(app *fiber.App) {
 	user.Post("/logout", c.Logout)
 	user.Post("/refresh-token", c.RefreshToken)
 	user.Put("/:id", md.AuthRequired, c.UpdateUser)
+	user.Put("/restore/:id", md.AuthRequired, md.RoleRequired("admin"), c.RestoreUser)
 	user.Put("/approve", md.AuthRequired, md.RoleRequired("admin"), c.Approve)
 	user.Delete("/:id", md.AuthRequired, c.SoftDeleteUser)
 }

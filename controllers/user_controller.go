@@ -89,3 +89,18 @@ func SoftDeleteUser(c *fiber.Ctx) error {
 		"message": username + " has been deleted.",
 	})
 }
+
+func RestoreUser(c *fiber.Ctx) error {
+	db := database.DBConn
+	id := c.Params("id")
+	var user m.User
+
+	if err := db.Unscoped().Where("id = ?", id).First(&user).Update("deleted_at", nil).Error; err != nil {
+		return c.Status(500).SendString("Failed to restore user.")
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"data":    &user,
+		"message": "Restore " + user.Username + " successfully.",
+	})
+}
