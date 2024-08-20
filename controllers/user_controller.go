@@ -104,3 +104,22 @@ func RestoreUser(c *fiber.Ctx) error {
 		"message": "Restore " + user.Username + " successfully.",
 	})
 }
+
+func HardDeleteUser(c *fiber.Ctx) error {
+	db := database.DBConn
+	id := c.Params("id")
+	var user m.User
+
+	if err := db.Unscoped().Where("id = ? AND deleted_at IS NOT NULL", id).First(&user).Error; err != nil {
+		return c.Status(404).SendString("User not found.")
+	}
+	username := user.Username
+
+	if err := db.Unscoped().Delete(&user).Error; err != nil {
+		return c.Status(500).SendString("Failed to remove user.")
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": username + " has been deleted.",
+	})
+}

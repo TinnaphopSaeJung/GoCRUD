@@ -34,4 +34,5 @@ func Routes(app *fiber.App) {
 	user.Put("/restore/:id", md.AuthRequired, md.RoleRequired("admin"), c.RestoreUser)
 	user.Put("/approve", md.AuthRequired, md.RoleRequired("admin"), c.Approve)
 	user.Delete("/:id", md.AuthRequired, c.SoftDeleteUser)
+	user.Delete("/bin/:id", md.AuthRequired, md.RoleRequired("admin"), c.HardDeleteUser)
 }
