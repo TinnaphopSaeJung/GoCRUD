@@ -22,10 +22,10 @@ func GetOrders(c *fiber.Ctx) error {
 
 func GetOrder(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
-	var orders m.Order
+	id := c.Params("userId")
+	var orders []m.Order
 
-	db.Preload("Items").Where("id = ?", id).Find(&orders)
+	db.Preload("Items").Where("Buyer = ?", id).Find(&orders)
 	return c.Status(200).JSON(fiber.Map{
 		"data":    &orders,
 		"message": "Show orders successfully.",

@@ -19,7 +19,7 @@ func Routes(app *fiber.App) {
 
 	order := app.Group("/order")
 	order.Get("/", md.AuthRequired, md.RoleRequired("admin"), c.GetOrders)
-	order.Get("/:id", md.AuthRequired, c.GetOrder)
+	order.Get("/:userId", md.AuthRequired, c.GetOrder)
 	order.Post("/:id", md.AuthRequired, md.RoleRequired("user"), c.AddOrder)
 	order.Put("/:id", md.AuthRequired, md.RoleRequired("user"), c.UpdateOrder)
 	order.Delete("/:id", md.AuthRequired, md.RoleRequired("user"), c.RemoveOrder)
