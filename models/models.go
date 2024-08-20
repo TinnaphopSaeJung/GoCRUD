@@ -1,6 +1,10 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type ProductImage struct {
 	gorm.Model
@@ -49,4 +53,9 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 		u.Approve = false
 	}
 	return
+}
+
+type Session struct {
+	UserID     uint      `gorm:"primaryKey"`
+	LastActive time.Time `json:"LastActive"`
 }

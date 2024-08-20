@@ -10,6 +10,7 @@ import (
 func Routes(app *fiber.App) {
 	product := app.Group("/product")
 	product.Get("/", c.GetProducts)
+	product.Get("/:product_id/image/:image_id", c.GetProductImage)
 	product.Get("/:id", c.GetProduct)
 	product.Post("/", md.AuthRequired, md.RoleRequired("admin"), c.AddProduct)
 	product.Put("/:id", md.AuthRequired, md.RoleRequired("admin"), c.UpdateProduct)
@@ -27,6 +28,7 @@ func Routes(app *fiber.App) {
 	user.Get("/", c.GetUsers)
 	user.Post("/register", c.Register)
 	user.Post("/login", c.Login)
+	user.Post("/logout", c.Logout)
 	user.Post("/refresh-token", c.RefreshToken)
 	user.Put("/approve", md.AuthRequired, md.RoleRequired("admin"), c.Approve)
 }

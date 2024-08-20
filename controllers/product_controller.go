@@ -34,6 +34,27 @@ func GetProduct(c *fiber.Ctx) error {
 	})
 }
 
+func GetProductImage(c *fiber.Ctx) error {
+	db := database.DBConn
+	productID := c.Params("product_id")
+	imageID := c.Params("image_id")
+
+	var product m.Product
+	if err := db.Preload("Images").Where("id = ?", productID).First(&product).Error; err != nil {
+		return c.Status(404).SendString("Product not found.")
+	}
+
+	var images m.ProductImage
+	if err := db.Where("id = ? AND product_id =?", imageID, productID).First(&images).Error; err != nil {
+		return c.Status(404).SendString("Image not found.")
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"data":    &images,
+		"message": "Show images of " + product.Product_Name,
+	})
+}
+
 func AddProduct(c *fiber.Ctx) error {
 	db := database.DBConn
 	var product m.Product

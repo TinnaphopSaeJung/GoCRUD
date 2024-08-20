@@ -27,7 +27,7 @@ func initDatabase() {
 		panic(err)
 	}
 	fmt.Println("Database connected!")
-	database.DBConn.AutoMigrate(&m.Product{}, &m.ProductImage{}, &m.User{}, &m.Order{}, &m.Item{})
+	database.DBConn.AutoMigrate(&m.Product{}, &m.ProductImage{}, &m.User{}, &m.Order{}, &m.Item{}, &m.Session{})
 	fmt.Println("AutoMigrate executed")
 }
 
