@@ -70,3 +70,22 @@ func UpdateUser(c *fiber.Ctx) error {
 		"message": "Updated user successfully.",
 	})
 }
+
+func SoftDeleteUser(c *fiber.Ctx) error {
+	db := database.DBConn
+	id := c.Params("id")
+	var user m.User
+
+	if err := db.Where("id = ?", id).First(&user).Error; err != nil {
+		return c.Status(404).SendString("User not found.")
+	}
+	username := user.Username
+
+	if err := db.Delete(&user).Error; err != nil {
+		return c.Status(500).SendString("Failed to delete image.")
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": username + " has been deleted.",
+	})
+}
