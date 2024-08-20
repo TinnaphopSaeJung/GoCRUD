@@ -114,7 +114,7 @@ func AddProduct(c *fiber.Ctx) error {
 	}
 
 	return c.Status(201).JSON(fiber.Map{
-		"data":    product,
+		"data":    &product,
 		"message": "Successfully created product.",
 	})
 }
@@ -197,7 +197,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	}
 
 	return c.Status(201).JSON(fiber.Map{
-		"data":    product,
+		"data":    &product,
 		"message": product.Product_Name + " has been successfully updated.",
 	})
 }
@@ -271,7 +271,7 @@ func RemoveImage(c *fiber.Ctx) error {
 	}
 
 	return c.Status(200).JSON(fiber.Map{
-		"data":    product,
+		"data":    &product,
 		"message": "Image has been successfully removed.",
 	})
 }

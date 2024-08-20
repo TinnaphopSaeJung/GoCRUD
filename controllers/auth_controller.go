@@ -221,13 +221,3 @@ func Approve(c *fiber.Ctx) error {
 		"message": user.FirstName + " has been approved.",
 	})
 }
-
-func GetUsers(c *fiber.Ctx) error {
-	db := database.DBConn
-	var users []m.User
-
-	db.Find(&users)
-	return c.Status(200).JSON(fiber.Map{
-		"data": &users,
-	})
-}

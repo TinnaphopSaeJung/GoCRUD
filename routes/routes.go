@@ -25,10 +25,11 @@ func Routes(app *fiber.App) {
 	order.Delete("/:id", md.AuthRequired, md.RoleRequired("user"), c.RemoveOrder)
 
 	user := app.Group("/user")
-	user.Get("/", c.GetUsers)
+	user.Get("/", md.AuthRequired, md.RoleRequired("admin"), c.GetUsers)
 	user.Post("/register", c.Register)
 	user.Post("/login", c.Login)
 	user.Post("/logout", c.Logout)
 	user.Post("/refresh-token", c.RefreshToken)
+	user.Put("/:id", md.AuthRequired, c.UpdateUser)
 	user.Put("/approve", md.AuthRequired, md.RoleRequired("admin"), c.Approve)
 }
