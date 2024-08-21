@@ -255,17 +255,16 @@ func RestoreProduct(c *fiber.Ctx) error {
 	})
 }
 
-func RemoveProduct(c *fiber.Ctx) error {
+func HardDeleteProduct(c *fiber.Ctx) error {
 	db := database.DBConn
 	productId := c.Params("productId")
 	var product m.Product
 
-	// ค้นหา product ที่ต้องการลบ
-	if err := db.Preload("Images").Where("id = ?", productId).First(&product).Error; err != nil {
+	if err := db.Unscoped().Preload("Images").Where("id = ? AND deleted_at IS NOT NULL", productId).First(&product).Error; err != nil {
 		return c.Status(404).SendString("Product not found.")
 	}
 
-	// ลบรูปภาพออกจากระบบ
+	// ลบรูปภาพออกจากระบบ (ลบใน folder uploads)
 	for _, img := range product.Images {
 		imagePath := "." + img.ImageURL
 		if err := os.Remove(imagePath); err != nil {
@@ -273,16 +272,15 @@ func RemoveProduct(c *fiber.Ctx) error {
 		}
 	}
 
-	// ลบข้อมูลรูปภาพจากฐานข้อมูล
-	if err := db.Where("product_id = ?", product.ID).Delete(&m.ProductImage{}).Error; err != nil {
+	// hard delete images ในฐานข้อมูล
+	if err := db.Unscoped().Where("product_id = ? AND deleted_at IS NOT NULL", product.ID).Delete(&m.ProductImage{}).Error; err != nil {
 		return c.Status(500).SendString("Failed to remove image data.")
 	}
 
 	productName := product.Product_Name
 
-	result := db.Delete(&product, productId)
-	if result.RowsAffected == 0 {
-		return c.SendStatus(404)
+	if err := db.Unscoped().Delete(&product).Error; err != nil {
+		return c.Status(500).SendString("Failed to remove product.")
 	}
 
 	return c.Status(201).JSON(fiber.Map{

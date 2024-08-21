@@ -16,7 +16,7 @@ func Routes(app *fiber.App) {
 	product.Put("/:productId", md.AuthRequired, md.RoleRequired("admin"), c.UpdateProduct)
 	product.Put("/restore/:productId", md.AuthRequired, md.RoleRequired("admin"), c.RestoreProduct)
 	product.Delete("/:productId", md.AuthRequired, md.RoleRequired("admin"), c.SoftDeleteProduct)
-	// product.Delete("/:productId", md.AuthRequired, md.RoleRequired("admin"), c.RemoveProduct)
+	product.Delete("/bin/:productId", md.AuthRequired, md.RoleRequired("admin"), c.HardDeleteProduct)
 	product.Delete("/:product_id/image/:image_id", md.AuthRequired, md.RoleRequired("admin"), c.RemoveImage)
 
 	order := app.Group("/order")
