@@ -294,26 +294,23 @@ func RemoveImage(c *fiber.Ctx) error {
 	imageID := c.Params("image_id")
 
 	var product m.Product
-
-	// ค้นหา product เดิมในฐานข้อมูล
 	if err := db.Preload("Images").Where("id = ?", productID).First(&product).Error; err != nil {
 		return c.Status(404).SendString("Product not found.")
 	}
 
 	var image m.ProductImage
-	// ค้นหา Image ที่ต้องการจะลบ
 	if err := db.Where("id = ? AND product_id = ?", imageID, productID).First(&image).Error; err != nil {
 		return c.Status(404).SendString("Image not found.")
 	}
 
-	// ลบไฟล์รูปภาพออกจากระบบไฟล์
+	// ลบรูปภาพออกจากระบบ (ลบใน folder uploads)
 	imagePath := "." + image.ImageURL
 	if err := os.Remove(imagePath); err != nil {
 		return c.Status(500).SendString("Failed to remove image file.")
 	}
 
-	// ลบข้อมูลรูปภาพออกจากฐานข้อมูล
-	if err := db.Delete(&image).Error; err != nil {
+	// hard delete images ในฐานข้อมูล
+	if err := db.Unscoped().Delete(&image).Error; err != nil {
 		return c.Status(500).SendString("Failed to delete image record.")
 	}
 
