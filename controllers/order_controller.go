@@ -224,12 +224,12 @@ func RemoveOrder(c *fiber.Ctx) error {
 	}
 
 	// ลบรายการสินค้าในคำสั่งซื้อนั้น
-	if err := db.Where("order_id = ?", orderId).Delete(&m.Item{}).Error; err != nil {
+	if err := db.Unscoped().Where("order_id = ?", orderId).Delete(&m.Item{}).Error; err != nil {
 		return c.Status(500).SendString("Failed to delete order items.")
 	}
 
 	// ลบคำสั่งซื้อ
-	if err := db.Delete(&order, orderId).Error; err != nil {
+	if err := db.Unscoped().Delete(&order, orderId).Error; err != nil {
 		return c.Status(500).SendString("Failed to delete order.")
 	}
 
