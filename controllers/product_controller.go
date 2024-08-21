@@ -202,6 +202,59 @@ func UpdateProduct(c *fiber.Ctx) error {
 	})
 }
 
+func SoftDeleteProduct(c *fiber.Ctx) error {
+	db := database.DBConn
+	productId := c.Params("productId")
+	var product m.Product
+
+	if err := db.Preload("Images").Where("id = ?", productId).First(&product).Error; err != nil {
+		return c.Status(404).SendString("Product not found.")
+	}
+
+	// soft delete images ในฐานข้อมูล
+	if err := db.Where("product_id = ?", product.ID).Delete(&m.ProductImage{}).Error; err != nil {
+		return c.Status(500).SendString("Failed to remove image data.")
+	}
+
+	productName := product.Product_Name
+
+	// soft delete product
+	if err := db.Where("id = ?", productId).Delete(&product).Error; err != nil {
+		return c.Status(500).SendString("Failed to delete product.")
+	}
+
+	return c.Status(201).JSON(fiber.Map{
+		"message": productName + " has been successfully deleted.",
+	})
+}
+
+func RestoreProduct(c *fiber.Ctx) error {
+	db := database.DBConn
+	productId := c.Params("productId")
+	var product m.Product
+
+	if err := db.Unscoped().Preload("Images").Where("id = ?", productId).First(&product).Error; err != nil {
+		return c.Status(404).SendString("Can't find the product you want to restore.")
+	}
+
+	// restore images ในฐานข้อมูล
+	for _, image := range product.Images {
+		if err := db.Unscoped().Where("product_id = ?", product.ID).First(&m.ProductImage{}).Update("deleted_at", nil).Error; err != nil {
+			return c.Status(500).SendString("Failed to restore images : " + strconv.Itoa(int(image.ID)))
+		}
+	}
+
+	// restore product
+	if err := db.Unscoped().Where("id = ?", productId).First(&product).Update("deleted_at", nil).Error; err != nil {
+		return c.Status(500).SendString("Failed to restore product.")
+	}
+
+	return c.Status(201).JSON(fiber.Map{
+		"data":    &product,
+		"message": "Restore " + product.Product_Name + " successfully.",
+	})
+}
+
 func RemoveProduct(c *fiber.Ctx) error {
 	db := database.DBConn
 	productId := c.Params("productId")
