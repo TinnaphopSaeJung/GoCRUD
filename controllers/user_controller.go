@@ -73,20 +73,49 @@ func UpdateUser(c *fiber.Ctx) error {
 
 func SoftDeleteUser(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	userId := c.Params("userId")
 	var user m.User
 
-	if err := db.Where("id = ?", id).First(&user).Error; err != nil {
+	// ตรวจสอบการมีอยู่ของ user
+	if err := db.Where("id = ?", userId).First(&user).Error; err != nil {
 		return c.Status(404).SendString("User not found.")
 	}
 	username := user.Username
 
+	// ลบ order ของ user คนนั้นและคืนจำนวนสินค้ากลับไปยังคลัง
+	var order m.Order
+	if err := db.Preload("Items").Where("Buyer = ?", userId).First(&order).Error; err != nil {
+		return c.Status(404).SendString("Order not found.")
+	}
+
+	for _, item := range order.Items {
+		var product m.Product
+		if err := db.Where("Product_Name = ?", item.Product).First(&product).Error; err != nil {
+			return c.Status(500).SendString("Product " + item.Product + " not found.")
+		}
+
+		product.Amount += item.Amount
+
+		if err := db.Save(&product).Error; err != nil {
+			return c.Status(500).SendString("Failed to update product amount in inventory.")
+		}
+	}
+
+	if err := db.Where("order_id = ?", order.ID).Delete(&m.Item{}).Error; err != nil {
+		return c.Status(500).SendString("Failed to delete order items.")
+	}
+
+	if err := db.Delete(&order, order.ID).Error; err != nil {
+		return c.Status(500).SendString("Failed to delete order.")
+	}
+
+	// soft delete user
 	if err := db.Delete(&user).Error; err != nil {
-		return c.Status(500).SendString("Failed to delete image.")
+		return c.Status(500).SendString("Failed to user.")
 	}
 
 	return c.Status(200).JSON(fiber.Map{
-		"message": username + " has been deleted.",
+		"message": username + " has been soft deleted.",
 	})
 }
 
