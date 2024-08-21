@@ -34,7 +34,7 @@ func GetOrder(c *fiber.Ctx) error {
 
 func AddOrder(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	userId := c.Params("userId")
 
 	var orderRequest struct {
 		Items []m.Item `json:"Items"`
@@ -46,7 +46,7 @@ func AddOrder(c *fiber.Ctx) error {
 
 	// ตรวจสอบว่า User นี้มีอยู่ระบบหรือไม่
 	var user m.User
-	if err := db.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := db.Where("id = ?", userId).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid Buyer.")
 	}
 
@@ -78,7 +78,7 @@ func AddOrder(c *fiber.Ctx) error {
 	}
 
 	order := m.Order{
-		Buyer:       id,
+		Buyer:       userId,
 		Items:       updatedItems,
 		Total_Price: total_price,
 	}
@@ -95,7 +95,7 @@ func AddOrder(c *fiber.Ctx) error {
 
 func UpdateOrder(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	orderId := c.Params("orderId")
 
 	var orderRequest struct {
 		Items []m.Item `json:"Items"`
@@ -107,7 +107,7 @@ func UpdateOrder(c *fiber.Ctx) error {
 
 	// ตรวจสอบว่า Order ที่ต้องการ update นี้มีอยู่ในระบบหรือไม่
 	var order m.Order
-	if err := db.Preload("Items").Where("id = ?", id).First(&order).Error; err != nil {
+	if err := db.Preload("Items").Where("id = ?", orderId).First(&order).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Order not found.")
 	}
 
@@ -202,11 +202,11 @@ func UpdateOrder(c *fiber.Ctx) error {
 
 func RemoveOrder(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	orderId := c.Params("orderId")
 	var order m.Order
 
 	// ตรวจสอบว่า Order ที่ต้องการลบมีอยู่ในฐานข้อมูลหรือไม่
-	if err := db.Preload("Items").Where("id = ?", id).First(&order).Error; err != nil {
+	if err := db.Preload("Items").Where("id = ?", orderId).First(&order).Error; err != nil {
 		return c.Status(404).SendString("Order not found.")
 	}
 
@@ -224,12 +224,12 @@ func RemoveOrder(c *fiber.Ctx) error {
 	}
 
 	// ลบรายการสินค้าในคำสั่งซื้อนั้น
-	if err := db.Where("order_id = ?", id).Delete(&m.Item{}).Error; err != nil {
+	if err := db.Where("order_id = ?", orderId).Delete(&m.Item{}).Error; err != nil {
 		return c.Status(500).SendString("Failed to delete order items.")
 	}
 
 	// ลบคำสั่งซื้อ
-	if err := db.Delete(&order, id).Error; err != nil {
+	if err := db.Delete(&order, orderId).Error; err != nil {
 		return c.Status(500).SendString("Failed to delete order.")
 	}
 

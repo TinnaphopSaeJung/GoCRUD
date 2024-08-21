@@ -24,10 +24,10 @@ func GetProducts(c *fiber.Ctx) error {
 
 func GetProduct(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	productId := c.Params("productId")
 	var product m.Product
 
-	db.Preload("Images").Where("id = ?", id).Find(&product)
+	db.Preload("Images").Where("id = ?", productId).Find(&product)
 	return c.Status(200).JSON(fiber.Map{
 		"data":    &product,
 		"message": "Show " + product.Product_Name + " success.",
@@ -121,11 +121,11 @@ func AddProduct(c *fiber.Ctx) error {
 
 func UpdateProduct(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	productId := c.Params("productId")
 	var product m.Product
 
 	// ค้นหา product เดิมในฐานข้อมูล
-	if err := db.Preload("Images").Where("id = ?", id).First(&product).Error; err != nil {
+	if err := db.Preload("Images").Where("id = ?", productId).First(&product).Error; err != nil {
 		return c.Status(404).SendString("Product not Found")
 	}
 
@@ -204,11 +204,11 @@ func UpdateProduct(c *fiber.Ctx) error {
 
 func RemoveProduct(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	productId := c.Params("productId")
 	var product m.Product
 
 	// ค้นหา product ที่ต้องการลบ
-	if err := db.Preload("Images").Where("id = ?", id).First(&product).Error; err != nil {
+	if err := db.Preload("Images").Where("id = ?", productId).First(&product).Error; err != nil {
 		return c.Status(404).SendString("Product not found.")
 	}
 
@@ -227,7 +227,7 @@ func RemoveProduct(c *fiber.Ctx) error {
 
 	productName := product.Product_Name
 
-	result := db.Delete(&product, id)
+	result := db.Delete(&product, productId)
 	if result.RowsAffected == 0 {
 		return c.SendStatus(404)
 	}

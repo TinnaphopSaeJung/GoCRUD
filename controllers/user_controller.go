@@ -20,10 +20,10 @@ func GetUsers(c *fiber.Ctx) error {
 
 func UpdateUser(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	userId := c.Params("userId")
 	var user m.User
 
-	if err := db.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := db.Where("id = ?", userId).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("User not found.")
 	}
 
@@ -121,10 +121,10 @@ func SoftDeleteUser(c *fiber.Ctx) error {
 
 func RestoreUser(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	userId := c.Params("userId")
 	var user m.User
 
-	if err := db.Unscoped().Where("id = ?", id).First(&user).Update("deleted_at", nil).Error; err != nil {
+	if err := db.Unscoped().Where("id = ?", userId).First(&user).Update("deleted_at", nil).Error; err != nil {
 		return c.Status(500).SendString("Failed to restore user.")
 	}
 
@@ -136,10 +136,10 @@ func RestoreUser(c *fiber.Ctx) error {
 
 func HardDeleteUser(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("id")
+	userId := c.Params("userId")
 	var user m.User
 
-	if err := db.Unscoped().Where("id = ? AND deleted_at IS NOT NULL", id).First(&user).Error; err != nil {
+	if err := db.Unscoped().Where("id = ? AND deleted_at IS NOT NULL", userId).First(&user).Error; err != nil {
 		return c.Status(404).SendString("User not found.")
 	}
 	username := user.Username
