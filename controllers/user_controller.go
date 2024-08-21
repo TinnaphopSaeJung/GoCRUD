@@ -101,11 +101,11 @@ func SoftDeleteUser(c *fiber.Ctx) error {
 		}
 	}
 
-	if err := db.Where("order_id = ?", order.ID).Delete(&m.Item{}).Error; err != nil {
+	if err := db.Unscoped().Where("order_id = ?", order.ID).Delete(&m.Item{}).Error; err != nil {
 		return c.Status(500).SendString("Failed to delete order items.")
 	}
 
-	if err := db.Delete(&order, order.ID).Error; err != nil {
+	if err := db.Unscoped().Where("id = ?", order.ID).Delete(&order).Error; err != nil {
 		return c.Status(500).SendString("Failed to delete order.")
 	}
 
