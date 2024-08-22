@@ -5,6 +5,7 @@ import (
 	"go-fiber-test/database"
 	m "go-fiber-test/models"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +19,22 @@ func Register(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&user); err != nil {
 		return c.Status(503).SendString(err.Error())
+	}
+
+	// validate username using regexp
+	usernamePattern := `^[a-zA-Z0-9\_\-]+$`
+	usernameMatched, err := regexp.MatchString(usernamePattern, user.Username)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	if !usernameMatched {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Username contains invalid characters. Only (a-z), (A-Z), (0-9), -, _",
+		})
 	}
 
 	// ตรวจสอบว่ามี User นี้อยู่แล้วไหม

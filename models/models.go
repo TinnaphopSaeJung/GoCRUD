@@ -36,10 +36,10 @@ type Order struct {
 
 type User struct {
 	gorm.Model
-	Username  string `json:"Username"`
-	Password  string `json:"Password"`
-	FirstName string `json:"FirstName"`
-	LastName  string `json:"LastName"`
+	Username  string `json:"Username" validate:"required"`
+	Password  string `json:"Password" validate:"required, min=6, max=20"`
+	FirstName string `json:"FirstName" validate:"required"`
+	LastName  string `json:"LastName" validate:"required"`
 	Role      string `json:"Role"`
 	Approve   bool   `json:"Approve"`
 }
