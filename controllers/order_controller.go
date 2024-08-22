@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"go-fiber-test/database"
 	m "go-fiber-test/models"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func GetOrders(c *fiber.Ctx) error {
@@ -22,10 +24,20 @@ func GetOrders(c *fiber.Ctx) error {
 
 func GetOrder(c *fiber.Ctx) error {
 	db := database.DBConn
-	id := c.Params("userId")
+	paramUserID := c.Params("userId")
+
+	// ดึง claims จาก context ที่ถูกเซ็ตใน middleware
+	claims := c.Locals("user").(jwt.MapClaims)
+	tokenUserID := claims["UserID"].(float64)
+
+	// ตรวจสอบ userID ใน token กับ userID จาก Params ว่าตรงกันไหม
+	if paramUserID != fmt.Sprintf("%v", uint(tokenUserID)) {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized to view this page.")
+	}
+
 	var orders []m.Order
 
-	db.Preload("Items").Where("Buyer = ?", id).Find(&orders)
+	db.Preload("Items").Where("Buyer = ?", paramUserID).Find(&orders)
 	return c.Status(200).JSON(fiber.Map{
 		"data":    &orders,
 		"message": "Show orders successfully.",
@@ -34,7 +46,16 @@ func GetOrder(c *fiber.Ctx) error {
 
 func AddOrder(c *fiber.Ctx) error {
 	db := database.DBConn
-	userId := c.Params("userId")
+	paramUserID := c.Params("userId")
+
+	// ดึง claims จาก context ที่ถูกเซ็ตใน middleware
+	claims := c.Locals("user").(jwt.MapClaims)
+	tokenUserID := claims["UserID"].(float64)
+
+	// ตรวจสอบ userID ใน token กับ userID จาก Params มาตรงกันไหม
+	if paramUserID != fmt.Sprintf("%v", uint(tokenUserID)) {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized to view this page.")
+	}
 
 	var orderRequest struct {
 		Items []m.Item `json:"Items"`
@@ -46,7 +67,7 @@ func AddOrder(c *fiber.Ctx) error {
 
 	// ตรวจสอบว่า User นี้มีอยู่ระบบหรือไม่
 	var user m.User
-	if err := db.Where("id = ?", userId).First(&user).Error; err != nil {
+	if err := db.Where("id = ?", paramUserID).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid Buyer.")
 	}
 
@@ -78,7 +99,7 @@ func AddOrder(c *fiber.Ctx) error {
 	}
 
 	order := m.Order{
-		Buyer:       userId,
+		Buyer:       paramUserID,
 		Items:       updatedItems,
 		Total_Price: total_price,
 	}
@@ -97,18 +118,27 @@ func UpdateOrder(c *fiber.Ctx) error {
 	db := database.DBConn
 	orderId := c.Params("orderId")
 
+	// ตรวจสอบว่า Order ที่ต้องการ update นี้มีอยู่ในระบบหรือไม่
+	var order m.Order
+	if err := db.Preload("Items").Where("id = ?", orderId).First(&order).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Order not found.")
+	}
+
+	// ดึง claims จาก context ที่ถูกเซ็ตใน middleware
+	claims := c.Locals("user").(jwt.MapClaims)
+	tokenUserID := claims["UserID"].(float64)
+
+	// ตรวจสอบ userID ใน token กับ buyer ว่าตรงกันไหม
+	if order.Buyer != fmt.Sprintf("%v", uint(tokenUserID)) {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized to view this page.")
+	}
+
 	var orderRequest struct {
 		Items []m.Item `json:"Items"`
 	}
 
 	if err := c.BodyParser(&orderRequest); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
-	}
-
-	// ตรวจสอบว่า Order ที่ต้องการ update นี้มีอยู่ในระบบหรือไม่
-	var order m.Order
-	if err := db.Preload("Items").Where("id = ?", orderId).First(&order).Error; err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Order not found.")
 	}
 
 	var total_price int
@@ -205,9 +235,18 @@ func RemoveOrder(c *fiber.Ctx) error {
 	orderId := c.Params("orderId")
 	var order m.Order
 
-	// ตรวจสอบว่า Order ที่ต้องการลบมีอยู่ในฐานข้อมูลหรือไม่
+	// ตรวจสอบว่า Order ที่ต้องการ delete นี้มีอยู่ในระบบหรือไม่
 	if err := db.Preload("Items").Where("id = ?", orderId).First(&order).Error; err != nil {
 		return c.Status(404).SendString("Order not found.")
+	}
+
+	// ดึง clamis จาก context ที่ถูกเซ็ตใน middleware
+	claims := c.Locals("user").(jwt.MapClaims)
+	tokenUserID := claims["UserID"].(float64)
+
+	// ตรวจสอบ userID ใน token กับ buyer ว่าตรงกันไหม
+	if order.Buyer != fmt.Sprintf("%v", uint(tokenUserID)) {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized to view this page.")
 	}
 
 	for _, item := range order.Items {

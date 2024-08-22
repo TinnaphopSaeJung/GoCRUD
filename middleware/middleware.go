@@ -42,6 +42,9 @@ func AuthRequired(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token claims.")
 	}
 
+	// เซ็ต claims ลงใน context เพื่อใช้งานใน controller
+	c.Locals("user", claims)
+
 	// สร้างตัวแปรมาเก็บค่าเวลาเดิมก่อนที่จะส่ง request (ครั้งแรกที่ login จะเป็นค่าเวลาเป็นเวลาปัจจุบันก่อน)
 	originalSession := m.Session{}
 	db := database.DBConn
