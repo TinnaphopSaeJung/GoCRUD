@@ -5,8 +5,10 @@ import (
 	"go-fiber-test/database"
 	m "go-fiber-test/models"
 	"go-fiber-test/routes"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -40,8 +42,14 @@ func main() {
 
 	app := fiber.New()
 	initDatabase()
-	routes.Routes(app)
 
+	// ใช้ limiter middleware จาก go fiber
+	app.Use(limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 30 * time.Second, // จำกัดให้สามารถส่งคำขอได้สูงสุด 10 ครั้งในทุก ๆ 30 วินาที
+	}))
+
+	routes.Routes(app)
 	app.Static("/uploads", "./uploads")
 
 	app.Listen(":3000")
